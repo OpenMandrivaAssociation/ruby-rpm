@@ -12,7 +12,6 @@ URL: http://rubyforge.org/projects/ruby-rpm/
 Source0: %{name}-%{version}.tar.bz2
 Patch0: ruby-rpm-1.2.1-rpm446.patch
 Patch1: ruby-rpm-1.2.3-rpm448.patch
-BuildRoot: %{_tmppath}/%{name}-%{version}-root
 BuildRequires: ruby-devel >= 1.8.1
 BuildRequires: rpm-devel >= 4.2.1
 BuildRequires: db4-devel
