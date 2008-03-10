@@ -1,6 +1,6 @@
 %define rbname rpm
 %define version 1.2.3
-%define release %mkrel 3
+%define release %mkrel 4
 
 Summary: An interface to access RPM database for Ruby
 Name: ruby-%{rbname}
@@ -10,6 +10,7 @@ Group: Development/Ruby
 License: GPL
 URL: http://rubyforge.org/projects/ruby-rpm/
 Source0: %{name}-%{version}.tar.bz2
+Source1: rpmvercmp.rb
 Patch0: ruby-rpm-1.2.1-rpm446.patch
 Patch1: ruby-rpm-1.2.3-rpm448.patch
 Patch2:	ruby-rpm-1.2.3-rpm5.patch
@@ -45,6 +46,8 @@ ruby install.rb config \
     --data-dir=%{buildroot}%{_datadir}
 ruby install.rb install
 chmod 0755 %{buildroot}%{ruby_sitearchdir}/rpmmodule.so
+mkdir -p %{buildroot}%{_bindir}
+cp -p %{SOURCE1} %{buildroot}%{_bindir}/
 
 %clean
 [ "%{buildroot}" != "/" ] && rm -rf %{buildroot}
@@ -54,5 +57,6 @@ chmod 0755 %{buildroot}%{ruby_sitearchdir}/rpmmodule.so
 %doc README COPYING ChangeLog doc
 %{ruby_sitelibdir}/rpm.rb
 %{ruby_sitearchdir}/rpmmodule.so
+%{_bindir}/rpmvercmp.rb
 
 
