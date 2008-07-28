@@ -1,6 +1,6 @@
 %define rbname rpm
 %define version 1.2.3
-%define release %mkrel 5
+%define release %mkrel 7
 
 Summary: An interface to access RPM database for Ruby
 Name: ruby-%{rbname}
