@@ -1,6 +1,6 @@
 %define rbname rpm
 %define version 1.2.3
-%define release %mkrel 11
+%define release %mkrel 12
 
 Summary: An interface to access RPM database for Ruby
 Name: ruby-%{rbname}
@@ -17,16 +17,15 @@ Patch3:	ruby-rpm-1.2.3-suggests.patch
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
 BuildRequires: ruby-devel >= 1.8.1
 BuildRequires: rpm-devel >= 4.2.1
-BuildRequires: db4-devel
 
 %description
 Ruby/RPM is an interface to access RPM database for Ruby
 
 %prep
 %setup -q
-%patch0 -p1 -b .rpm46
-#%patch2 -p1 -b .rpm5
-%patch3 -p1 -b .suggests
+%patch0 -p1 -b .rpm46~
+%patch2 -p1 -b .rpm5~
+%patch3 -p1 -b .suggests~
 
 %build
 ruby install.rb config \
