@@ -1,22 +1,20 @@
-%define rbname rpm
-%define version 1.2.3
-%define release %mkrel 12
+%define	rbname	rpm
 
-Summary: An interface to access RPM database for Ruby
-Name: ruby-%{rbname}
-Version: %{version}
-Release: %{release}
-Group: Development/Ruby
-License: GPL
-URL: http://rubyforge.org/projects/ruby-rpm/
-Source0: %{name}-%{version}.tar.bz2
-Source1: rpmvercmp.rb
-Patch0: ruby-rpm-1.2.3-rpm46.patch
-Patch2:	ruby-rpm-1.2.3-rpm5.patch
-Patch3:	ruby-rpm-1.2.3-suggests.patch
-BuildRoot: %{_tmppath}/%{name}-%{version}-root
-BuildRequires: ruby-devel >= 1.8.1
-BuildRequires: rpm-devel >= 4.2.1
+Summary:	An interface to access RPM database for Ruby
+Name:		ruby-%{rbname}
+Version:	1.2.3
+Release:	%mkrel 12
+Group:		Development/Ruby
+License:	GPL
+URL:		http://rubyforge.org/projects/ruby-rpm/
+Source0:	%{name}-%{version}.tar.bz2
+Source1:	rpmvercmp.rb
+Patch0:		ruby-rpm-1.2.3-rpm46.patch
+Patch2:		ruby-rpm-1.2.3-rpm5.patch
+Patch3:		ruby-rpm-1.2.3-suggests.patch
+BuildRoot:	%{_tmppath}/%{name}-%{version}-root
+BuildRequires:	ruby-devel >= 1.8.1
+BuildRequires:	rpm-devel >= 4.2.1
 
 %description
 Ruby/RPM is an interface to access RPM database for Ruby
@@ -37,7 +35,7 @@ ruby install.rb config \
 ruby install.rb setup
 
 %install
-[ "%{buildroot}" != "/" ] && %__rm -rf %{buildroot}
+rm -rf %{buildroot}
 ruby install.rb config \
     --bin-dir=%{buildroot}%{_bindir} \
     --rb-dir=%{buildroot}%{ruby_sitelibdir} \
@@ -49,7 +47,7 @@ mkdir -p %{buildroot}%{_bindir}
 cp -p %{SOURCE1} %{buildroot}%{_bindir}/
 
 %clean
-[ "%{buildroot}" != "/" ] && rm -rf %{buildroot}
+rm -rf %{buildroot}
 
 %files
 %defattr(-, root, root)
