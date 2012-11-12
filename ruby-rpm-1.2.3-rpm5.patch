@@ -1,0 +1,356 @@
+--- ruby-rpm-1.2.3/ext/rpm/db.c.rpm5~	2010-12-09 22:37:20.430887347 +0100
++++ ruby-rpm-1.2.3/ext/rpm/db.c	2010-12-09 22:37:20.462886928 +0100
+@@ -7,7 +7,7 @@
+ /* $Id: db.c 45 2004-06-04 15:11:20Z kazuhiko $ */
+ 
+ #include "private.h"
+-#if RPM_VERSION(4,6,0) <= RPM_VERSION_CODE
++#if RPM_VERSION(5,0,0) > RPM_VERSION_CODE && RPM_VERSION(4,6,0) <= RPM_VERSION_CODE
+ #include "rpmdb_internal.h" /* from rpm-4.6.0-rc3/lib/rpmdb_internal.h */
+ #endif
+ 
+@@ -507,7 +507,7 @@ rpm_transaction_delete(VALUE trans, VALU
+ 
+ #if RPM_VERSION(4,1,0) <= RPM_VERSION_CODE
+ 
+-#if RPM_VERSION(4,6,0) <= RPM_VERSION_CODE
++#if RPM_VERSION(5,0,0) > RPM_VERSION_CODE && RPM_VERSION(4,6,0) <= RPM_VERSION_CODE
+ /* from rpm-4.6.0-rc3/lib/rpmps.c */
+ struct rpmProblem_s {
+     char * pkgNEVR;
+@@ -535,7 +535,7 @@ sameProblem(const rpmProblem p1, const r
+     if (p1->str1)
+ 		if (p2->str1 && strcmp(p1->str1, p2->str1))
+ 			return 1;
+-#if RPM_VERSION(4,6,0) <= RPM_VERSION_CODE
++#if RPM_VERSION(5,0,0) > RPM_VERSION_CODE && RPM_VERSION(4,6,0) <= RPM_VERSION_CODE
+     if (p1->num1 != p2->num1)
+ #else
+     if (p1->ulong1 != p2->ulong1)
+@@ -613,7 +613,7 @@ package_new_from_NEVR(const char* nevr)
+ }
+ #endif
+ 
+-#if RPM_VERSION(4,6,0) <= RPM_VERSION_CODE
++#if RPM_VERSION(5,0,0) > RPM_VERSION_CODE && RPM_VERSION(4,6,0) <= RPM_VERSION_CODE
+ /* from rpm-4.6.0-rc3/lib/rpmps.c */
+ struct rpmps_s {
+     int numProblems;		/*!< Current probs array size. */
+--- ruby-rpm-1.2.3/ext/rpm/extconf.rb.rpm5~	2010-12-09 22:37:20.431886509 +0100
++++ ruby-rpm-1.2.3/ext/rpm/extconf.rb	2010-12-09 22:37:20.462886928 +0100
+@@ -41,7 +41,7 @@ def check_rpm
+     $libs = append_library($libs, 'rpmdb')
+   end
+ 
+-  if have_header('rpmlib.h') and
++  if (have_header('rpmlib.h') or have_header('rpm4compat.h')) and
+       have_library('rpmio') and
+       have_library('rpmbuild', 'getBuildTime') then
+     true
+@@ -53,6 +53,17 @@ end
+ 
+ def check_db
+   dir_config('db')
++  if rpm_version(5, 0, 0) <= $rpm_version_code then
++    if have_library("db-5.1", "db_version")
++	return true
++    end
++    if have_library("db-5.0", "db_version")
++	return true
++    end
++    if have_library("db-4.8", "db_version")
++	return true
++    end
++  end
+   if rpm_version(4, 6, 0) <= $rpm_version_code then
+     if have_library("db-4.6", "db_version") then
+       return true
+--- ruby-rpm-1.2.3/ext/rpm/package.c.rpm5~	2010-12-09 22:37:20.438650303 +0100
++++ ruby-rpm-1.2.3/ext/rpm/package.c	2010-12-09 22:37:20.489887697 +0100
+@@ -8,7 +8,7 @@
+ 
+ #include "private.h"
+ 
+-#if RPM_VERSION(4,6,0) <= RPM_VERSION_CODE
++#if RPM_VERSION(5,0,0) > RPM_VERSION_CODE && RPM_VERSION(4,6,0) <= RPM_VERSION_CODE
+ /* rpm-4.6.0-rc3/lib/header_internal.c */
+ extern int headerAddEntry(Header h, rpmTag tag, rpmTagType type,
+ 		rpm_constdata_t p, rpm_count_t c);
+@@ -50,7 +50,7 @@ package_free(Header hdr)
+ 		char *sigmd5;
+ 		VALUE signature;
+ 		VALUE p;
+-#if RPM_VERSION(4,6,0) <= RPM_VERSION_CODE
++#if RPM_VERSION(5,0,0) > RPM_VERSION_CODE && RPM_VERSION(4,6,0) <= RPM_VERSION_CODE
+ 		sigmd5 = headerFormat(hdr, "%{sigmd5}", NULL);
+ #else
+ 		sigmd5 = headerSprintf(hdr,"%{sigmd5}",
+@@ -80,7 +80,7 @@ package_new_from_header(VALUE klass, Hea
+ 
+ 	if(tbl){
+ 		char *sigmd5;
+-#if RPM_VERSION(4,6,0) <= RPM_VERSION_CODE
++#if RPM_VERSION(5,0,0) > RPM_VERSION_CODE && RPM_VERSION(4,6,0) <= RPM_VERSION_CODE
+ 		sigmd5 = headerFormat(hdr, "%{sigmd5}", NULL);
+ #else
+ 		sigmd5 = headerSprintf(hdr,"%{sigmd5}",
+@@ -194,7 +194,7 @@ package_s_load(VALUE klass, VALUE str)
+ 	Fseek(fd, 0, SEEK_SET);
+ 	hdr = headerRead(fd, HEADER_MAGIC_YES);
+ 	Fclose(fd);
+-#if RPM_VERSION(4,6,0) <= RPM_VERSION_CODE
++#if RPM_VERSION(5,0,0) > RPM_VERSION_CODE && RPM_VERSION(4,6,0) <= RPM_VERSION_CODE
+ 	unlink(RSTRING(temp)->ptr);
+ #else
+ 	Unlink(RSTRING(temp)->ptr);
+@@ -213,11 +213,11 @@ package_s_load(VALUE klass, VALUE str)
+ VALUE
+ rpm_package_copy_tags(VALUE from,VALUE to,VALUE tags)
+ {
+-	int32_t *copy_tags;
++	rpmTag *copy_tags;
+ 	int length = NUM2INT(rb_funcall(tags,rb_intern("length"),0));
+ 	int i;
+ 
+-	copy_tags = ALLOCA_N(int32_t,length);
++	copy_tags = ALLOCA_N(rpmTag,length);
+ 	for (i=0;i<length;i++)
+ 		copy_tags[i] = NUM2INT(rb_ary_entry(tags, i));
+ 	headerCopyTags(RPM_HEADER(from),RPM_HEADER(to),copy_tags);
+@@ -338,7 +338,7 @@ rpm_package_aref(VALUE pkg, VALUE tag)
+ 	int ary_p = 0;
+ 	int i18n_p = 0;
+ 
+-#if RPM_VERSION(4,6,0) <= RPM_VERSION_CODE
++#if RPM_VERSION(5,0,0) > RPM_VERSION_CODE && RPM_VERSION(4,6,0) <= RPM_VERSION_CODE
+ 	if (!headerGetEntryMinMemory(RPM_HEADER(pkg), tagval, (rpmTagType*)&type,
+ 									 (rpm_data_t*)&data, (rpm_count_t*)&count)) {
+ #else
+@@ -439,7 +440,7 @@ rpm_package_aref(VALUE pkg, VALUE tag)
+ 				int32_t i18nc;
+ 
+ 				if (!headerGetEntryMinMemory(
+-#if RPM_VERSION(4,6,0) <= RPM_VERSION_CODE
++#if RPM_VERSION(5,0,0) > RPM_VERSION_CODE && RPM_VERSION(4,6,0) <= RPM_VERSION_CODE
+ 						RPM_HEADER(pkg), HEADER_I18NTABLE, (rpmTagType*)&i18nt,
+ 						(rpm_data_t*)&i18ntab, (rpm_count_t*)&i18nc)) {
+ #else
+@@ -480,7 +481,7 @@ rpm_package_sprintf(VALUE pkg, VALUE fmt
+ 	const char *errstr = "(unknown error)";
+ 	const char *str;
+ 
+-#if RPM_VERSION(4,6,0) <= RPM_VERSION_CODE
++#if RPM_VERSION(5,0,0) > RPM_VERSION_CODE && RPM_VERSION(4,6,0) <= RPM_VERSION_CODE
+ 	str = headerFormat(RPM_HEADER(pkg), StringValueCStr(fmt), &errstr);
+ #else
+ 	str = headerSprintf(RPM_HEADER(pkg), StringValueCStr(fmt),
+@@ -522,7 +523,7 @@ rpm_package_get_signature(VALUE pkg)
+ 
+ 	if (NIL_P(signature)) {
+         	char *sigmd5;
+-#if RPM_VERSION(4,6,0) <= RPM_VERSION_CODE
++#if RPM_VERSION(5,0,0) > RPM_VERSION_CODE && RPM_VERSION(4,6,0) <= RPM_VERSION_CODE
+ 		sigmd5 = headerFormat(RPM_HEADER(pkg), "%{sigmd5}", NULL);
+ #else
+ 		sigmd5 = headerSprintf(RPM_HEADER(pkg),"%{sigmd5}",
+@@ -633,7 +634,7 @@ rpm_package_get_dependency(VALUE pkg,int
+ 
+ 	deps = rb_ary_new();
+ 
+-#if RPM_VERSION(4,6,0) <= RPM_VERSION_CODE
++#if RPM_VERSION(5,0,0) > RPM_VERSION_CODE && RPM_VERSION(4,6,0) <= RPM_VERSION_CODE
+ 	if (!headerGetEntryMinMemory(RPM_HEADER(pkg), nametag, (rpmTagType*)&nametype,
+ 						 (rpm_data_t*)&names, (rpm_count_t*)&count)) {
+ #else
+@@ -642,7 +643,7 @@ rpm_package_get_dependency(VALUE pkg,int
+ #endif
+ 		return deps;
+ 	}
+-#if RPM_VERSION(4,6,0) <= RPM_VERSION_CODE
++#if RPM_VERSION(5,0,0) > RPM_VERSION_CODE && RPM_VERSION(4,6,0) <= RPM_VERSION_CODE
+ 	if (!headerGetEntryMinMemory(RPM_HEADER(pkg), versiontag, (rpmTagType*)&versiontype,
+ 						 (rpm_data_t*)&versions, (rpm_count_t*)&count)) {
+ #else
+@@ -652,7 +653,7 @@ rpm_package_get_dependency(VALUE pkg,int
+ 		release_entry(nametype, (void*)names);
+ 		return deps;
+ 	}
+-#if RPM_VERSION(4,6,0) <= RPM_VERSION_CODE
++#if RPM_VERSION(5,0,0) > RPM_VERSION_CODE && RPM_VERSION(4,6,0) <= RPM_VERSION_CODE
+ 	if (!headerGetEntryMinMemory(RPM_HEADER(pkg), flagtag, (rpmTagType*)&flagtype,
+ 						 (rpm_data_t*)&flags, (rpm_count_t*)&count)) {
+ #else
+@@ -710,7 +717,7 @@ rpm_package_get_changelog(VALUE pkg)
+ 
+ 	cl = rb_ary_new();
+ 
+-#if RPM_VERSION(4,6,0) <= RPM_VERSION_CODE
++#if RPM_VERSION(5,0,0) > RPM_VERSION_CODE && RPM_VERSION(4,6,0) <= RPM_VERSION_CODE
+ 	if (!headerGetEntryMinMemory(RPM_HEADER(pkg), RPMTAG_CHANGELOGTIME, (rpmTagType*)&timetype,
+ 						 (rpm_data_t*)&times, (rpm_count_t*)&count)) {
+ #else
+@@ -719,7 +726,7 @@ rpm_package_get_changelog(VALUE pkg)
+ #endif
+ 		return cl;
+ 	}
+-#if RPM_VERSION(4,6,0) <= RPM_VERSION_CODE
++#if RPM_VERSION(5,0,0) > RPM_VERSION_CODE && RPM_VERSION(4,6,0) <= RPM_VERSION_CODE
+ 	if (!headerGetEntryMinMemory(RPM_HEADER(pkg), RPMTAG_CHANGELOGNAME, (rpmTagType*)&nametype,
+ 						 (rpm_data_t*)&names, (rpm_count_t*)&count)) {
+ #else
+@@ -729,7 +736,7 @@ rpm_package_get_changelog(VALUE pkg)
+ 		release_entry(timetype, (void*)times);
+ 		return cl;
+ 	}
+-#if RPM_VERSION(4,6,0) <= RPM_VERSION_CODE
++#if RPM_VERSION(5,0,0) > RPM_VERSION_CODE && RPM_VERSION(4,6,0) <= RPM_VERSION_CODE
+ 	if (!headerGetEntryMinMemory(RPM_HEADER(pkg), RPMTAG_CHANGELOGTEXT, (rpmTagType*)&texttype,
+ 						 (rpm_data_t*)&texts, (rpm_count_t*)&count)) {
+ #else
+--- ruby-rpm-1.2.3/ext/rpm/private.h.rpm5~	2010-12-09 22:37:20.439637033 +0100
++++ ruby-rpm-1.2.3/ext/rpm/private.h	2010-12-09 22:37:32.629677893 +0100
+@@ -12,6 +12,7 @@
+ #include <errno.h>
+ #include <fcntl.h>
+ #include <stdio.h>
++#include <stdint.h>
+ #include <stdlib.h>
+ #include <string.h>
+ #include <sys/mman.h>
+@@ -20,8 +21,12 @@
+ #include <unistd.h>
+ #include <st.h>
+ 
+-#include <rpmcli.h>
++#if RPM_VERSION_CODE >= RPM_VERSION(5,0,0)
++#include <rpm4compat.h>
++#else
+ #include <rpmlib.h>
++#endif
++#include <rpmcli.h>
+ #include <rpmdb.h>
+ #include <rpmbuild.h>
+ #if RPM_VERSION_CODE < RPM_VERSION(4,6,0)
+@@ -100,7 +105,7 @@ void Init_rpm_spec(void);
+ /* version.c */
+ void Init_rpm_version(void);
+ 
+-#if RPM_VERSION(4,6,0) <= RPM_VERSION_CODE
++#if RPM_VERSION(5,0,0) > RPM_VERSION_CODE && RPM_VERSION(4,6,0) <= RPM_VERSION_CODE
+ /* rpm-4.6.0-rc3/lib/header_internal.c */
+ extern int headerGetEntryMinMemory(Header h, rpmTag tag,
+ 			rpmTagType * type,
+@@ -114,7 +119,7 @@ static void inline
+ get_entry(Header hdr, rpmTag tag, rpmTagType* type, void** ptr)
+ {
+ 	if (!headerGetEntryMinMemory(
+-#if RPM_VERSION(4,6,0) <= RPM_VERSION_CODE
++#if RPM_VERSION(5,0,0) > RPM_VERSION_CODE && RPM_VERSION(4,6,0) <= RPM_VERSION_CODE
+ 			hdr, tag, type, (rpm_data_t*)ptr, NULL)) {
+ #else
+ 			hdr, tag, (hTYP_t)type, (hPTR_t*)ptr, NULL)) {
+--- ruby-rpm-1.2.3/ext/rpm/rpm.c.rpm5~	2010-12-09 22:37:20.447650583 +0100
++++ ruby-rpm-1.2.3/ext/rpm/rpm.c	2010-12-09 22:37:20.474637173 +0100
+@@ -499,7 +499,9 @@ Init_rpmmodule(void)
+ 	DEF_TRANS_FLAG(NOTRIGGERS);
+ 	DEF_TRANS_FLAG(NODOCS);
+ 	DEF_TRANS_FLAG(ALLFILES);
++#if RPM_VERSION_CODE < RPM_VERSION(5,1,7)
+ 	DEF_TRANS_FLAG(KEEPOBSOLETE);
++#endif
+ #if RPM_VERSION_CODE < RPM_VERSION(4,1,0)
+ 	DEF_TRANS_FLAG(MULTILIB);
+ #endif
+@@ -509,7 +511,9 @@ Init_rpmmodule(void)
+ 	DEF_TRANS_FLAG(PKGUNDO);
+ 	DEF_TRANS_FLAG(COMMIT);
+ 	DEF_TRANS_FLAG(UNDO);
++#if RPM_VERSION_CODE < RPM_VERSION(4,4,6)
+ 	DEF_TRANS_FLAG(REVERSE);
++#endif
+ 	DEF_TRANS_FLAG(NOTRIGGERPREIN);
+ 	DEF_TRANS_FLAG(NOPRE);
+ 	DEF_TRANS_FLAG(NOPOST);
+@@ -666,6 +670,10 @@ Init_rpmmodule(void)
+ 	rb_gc_register_address(&ruby_rpm_temp_format);
+ 
+ 	rpmReadConfigFiles(NULL, NULL);
++#if RPM_VERSION_CODE < RPM_VERSION(5,0,0)
+ 	rpmInitMacros(NULL, macrofiles);
++#else
++	rpmInitMacros(NULL, rpmMacrofiles);
++#endif
+ 	rpmSetVerbosity(RPMLOG_EMERG);
+ }
+--- ruby-rpm-1.2.3/ext/rpm/spec.c.rpm5~	2010-12-09 22:37:20.457896916 +0100
++++ ruby-rpm-1.2.3/ext/rpm/spec.c	2010-12-09 22:37:20.475637452 +0100
+@@ -60,13 +60,17 @@ spec_s_open(VALUE klass, VALUE filename)
+ 	return Data_Wrap_Struct(klass, NULL, spec_free, rspec);
+ #else
+ 	ts = rpmtsCreate();
++#if RPM_VERSION_CODE >= RPM_VERSION(5,0,0)
++	switch (parseSpec(ts, RSTRING(filename)->ptr, "/", 0, NULL, NULL, 1, 1, 0)) {
++#else
+ 	switch (parseSpec(ts, RSTRING(filename)->ptr, "/", NULL, 0, "", NULL, 1, 1)) {
++#endif
+ 	case 0:
+ 		if (ts != NULL) {
+ 			break;
+ 		}
+ 
+-#if RPM_VERSION(4,6,0) <= RPM_VERSION_CODE
++#if RPM_VERSION(5,0,0) > RPM_VERSION_CODE && RPM_VERSION(4,6,0) <= RPM_VERSION_CODE
+ 	case PART_ERROR:
+ #else
+ 	case RPMERR_BADSPEC:
+@@ -87,7 +91,11 @@ rpm_spec_open(const char* filename)
+ VALUE
+ rpm_spec_get_buildroot(VALUE spec)
+ {
+-#if RPM_VERSION(4,6,0) <= RPM_VERSION_CODE
++#if RPM_VERSION_CODE >= RPM_VERSION(5,0,0)
++	/* ehr.. function should prolly' rather be eliminated, but whatever.. */
++	{
++		return rb_str_new2(rpmGetPath("%{buildroot}", NULL));
++#elif RPM_VERSION(4,6,0) <= RPM_VERSION_CODE
+ 	if (RPM_SPEC(spec)->buildRoot) {
+ 		return rb_str_new2(RPM_SPEC(spec)->buildRoot);
+ #else
+@@ -138,7 +146,7 @@ rpm_spec_get_buildrequires(VALUE spec)
+ 		register int i;
+ 
+ 		br = rb_ary_new();
+-#if RPM_VERSION(4,6,0) <= RPM_VERSION_CODE
++#if RPM_VERSION(5,0,0) > RPM_VERSION_CODE && RPM_VERSION(4,6,0) <= RPM_VERSION_CODE
+ 		if (!headerGetEntryMinMemory(RPM_SPEC(spec)->buildRestrictions,
+ 									 RPMTAG_REQUIRENAME, (rpmTagType*)&nt,
+ 									 (rpm_data_t*)&names, (rpm_count_t*)&count)) {
+@@ -184,7 +192,7 @@ rpm_spec_get_buildconflicts(VALUE spec)
+ 		register int i;
+ 
+ 		bc = rb_ary_new();
+-#if RPM_VERSION(4,6,0) <= RPM_VERSION_CODE
++#if RPM_VERSION(5,0,0) > RPM_VERSION_CODE && RPM_VERSION(4,6,0) <= RPM_VERSION_CODE
+ 		if (!headerGetEntryMinMemory(RPM_SPEC(spec)->buildRestrictions,
+ 									 RPMTAG_CONFLICTNAME, (rpmTagType*)&nt,
+ 									 (rpm_data_t*)&names, (rpm_count_t*)&count)) {
+--- ruby-rpm-1.2.3/ext/rpm/version.c.rpm5~	2010-12-09 22:37:20.459886719 +0100
++++ ruby-rpm-1.2.3/ext/rpm/version.c	2010-12-09 22:37:20.483886649 +0100
+@@ -293,7 +293,7 @@ rpm_version_to_vre(VALUE ver)
+ 	r = rb_ivar_get(ver, id_r);
+ 	e = rb_ivar_get(ver, id_e);
+ 	if (!NIL_P(e)) {
+-		snprintf(buf,BUFSIZ,"%d:",NUM2INT(e));
++		snprintf(buf,BUFSIZ,"%ld:",NUM2INT(e));
+ 		p += strlen(buf);
+         }
+ 	strcpy(p, RSTRING(v)->ptr);
+@@ -315,7 +315,7 @@ rpm_version_inspect(VALUE ver)
+ 	e = rb_ivar_get(ver, id_e);
+ 
+ 	if (!NIL_P(e)) {
+-		snprintf(buf, BUFSIZ, "#<RPM::Version v=%s, r=%s, e=%d>", RSTRING(rb_inspect(v))->ptr, RSTRING(rb_inspect(r))->ptr, NUM2INT(e));
++		snprintf(buf, BUFSIZ, "#<RPM::Version v=%s, r=%s, e=%ld>", RSTRING(rb_inspect(v))->ptr, RSTRING(rb_inspect(r))->ptr, NUM2INT(e));
+         } else {
+ 		snprintf(buf, BUFSIZ, "#<RPM::Version v=%s, r=%s>", RSTRING(rb_inspect(v))->ptr, RSTRING(rb_inspect(r))->ptr);
+ 	}

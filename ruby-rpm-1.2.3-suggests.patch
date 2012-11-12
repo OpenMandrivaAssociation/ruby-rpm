@@ -1,0 +1,32 @@
+Index: ruby-rpm-1.2.3/ext/rpm/package.c
+--- ruby-rpm-1.2.3/ext/rpm/package.c	2009-09-08 08:47:02.000000000 +0200
++++ package.c	2009-09-08 08:46:49.000000000 +0200
+@@ -362,6 +362,7 @@
+ 	case RPMTAG_REQUIREFLAGS:
+ 	case RPMTAG_CONFLICTFLAGS:
+ 	case RPMTAG_OBSOLETEFLAGS:
++	case RPMTAG_SUGGESTSFLAGS:
+ 		ary_p = 1;
+ 		break;
+ 
+@@ -687,6 +688,12 @@
+ }
+ 
+ VALUE
++rpm_package_get_suggests(VALUE pkg)
++{
++	return rpm_package_get_dependency(pkg,RPMTAG_SUGGESTSNAME,RPMTAG_SUGGESTSVERSION,RPMTAG_SUGGESTSFLAGS,rpm_require_new);
++}
++
++VALUE
+ rpm_package_get_conflicts(VALUE pkg)
+ {
+ 	return rpm_package_get_dependency(pkg,RPMTAG_CONFLICTNAME,RPMTAG_CONFLICTVERSION,RPMTAG_CONFLICTFLAGS,rpm_conflict_new);
+@@ -853,6 +860,7 @@
+ 	rb_define_method(rpm_cPackage, "files", rpm_package_get_files, 0);
+ 	rb_define_method(rpm_cPackage, "provides", rpm_package_get_provides, 0);
+ 	rb_define_method(rpm_cPackage, "requires", rpm_package_get_requires, 0);
++	rb_define_method(rpm_cPackage, "suggests", rpm_package_get_suggests, 0);
+ 	rb_define_method(rpm_cPackage, "conflicts", rpm_package_get_conflicts, 0);
+ 	rb_define_method(rpm_cPackage, "obsoletes", rpm_package_get_obsoletes, 0);
+ 	rb_define_method(rpm_cPackage, "changelog", rpm_package_get_changelog, 0);
