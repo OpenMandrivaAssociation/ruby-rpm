@@ -6,7 +6,7 @@ Version:	1.2.3
 Release:	%mkrel 12
 Group:		Development/Ruby
 License:	GPL
-URL:		http://rubyforge.org/projects/ruby-rpm/
+URL:		https://rubyforge.org/projects/ruby-rpm/
 Source0:	%{name}-%{version}.tar.bz2
 Source1:	rpmvercmp.rb
 Patch0:		ruby-rpm-1.2.3-rpm46.patch
