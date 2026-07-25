@@ -3,7 +3,7 @@
 Summary:	An interface to access RPM database for Ruby
 Name:		ruby-%{rbname}
 Version:	1.2.3
-Release:	%mkrel 12
+Release:	13
 Group:		Development/Ruby
 License:	GPL
 URL:		https://rubyforge.org/projects/ruby-rpm/
